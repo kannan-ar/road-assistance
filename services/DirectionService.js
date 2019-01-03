@@ -9,7 +9,6 @@ export const getDirections = async (origin, destination) => {
     let json = await response.json();
     
     let points = Polyline.decode(json.routes[0].overview_polyline.points);
-   
     let coords = points.map((point, index) => {
         return {
             latitude: point[0],

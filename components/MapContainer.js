@@ -24,13 +24,15 @@ export default class MapContainer extends React.Component {
     getLocationAsync = async () => {
         let { status } = await Permissions.askAsync(Permissions.LOCATION);
         if (status === 'granted') {
-            let location = await Location.getCurrentPositionAsync({ enableHighAccuracy: true });
-            this.setState({ isLoading: true, location: location });
+            let location = await Location.watchPositionAsync({ enableHighAccuracy: true, distanceInterval: 10 }, (loc) => {
+                let {latitude, longitude} = loc.coords;
+                this.setState({ isLoading: true, location: {latitude, longitude} });
+            });
         }
     };
 
     onClick = async() => {
-        let latLng = `${this.state.location.coords.latitude},${this.state.location.coords.longitude}` ;
+        let latLng = `${this.state.location.latitude},${this.state.location.longitude}` ;
         let coords = await getDirections(latLng, "Infopark, Kakkanad");
         this.setState({coords: coords});
         //Alert.alert(JSON.stringify(msg));
@@ -45,24 +47,21 @@ export default class MapContainer extends React.Component {
             );
         }
         else {
-            let lat = this.state.location.coords.latitude;
-            let lng = this.state.location.coords.longitude;
+            let location = this.state.location;
             return (
                 <View style={styles.mapContainer}>
                     <MapView
                         style={styles.map}
                         region={{
-                            latitude: lat,
-                            longitude: lng,
+                            ...location,
                             latitudeDelta: LATITUDE_DELTA,
                             longitudeDelta: LONGITUDE_DELTA
                         }}>
-                        <MapView.Marker coordinate={{ latitude: lat, longitude: lng }} title="You are here" draggable onDragEnd={(e) => { }} />
+                        <MapView.Marker coordinate={{ ...location }} title="You are here" />
                         {!!this.state.coords && 
                             <MapView.Polyline coordinates={this.state.coords} strokeWidth={2} strokeColor="red" />
                         }
                     </MapView>
-                    <Button title="Click Me" onPress={this.onClick} />
                 </View>
             );
         }
