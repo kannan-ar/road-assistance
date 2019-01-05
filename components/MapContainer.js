@@ -1,6 +1,7 @@
 import React from 'react';
-import { Text, View, StyleSheet, Dimensions, Button, Alert, Image } from "react-native";
+import { Text, View, StyleSheet, Dimensions, Image } from "react-native";
 import { MapView, Location, Permissions } from "expo";
+import {Spinner} from "native-base";
 import { getDirections } from '../services/DirectionService';
 import pinImg from '../assets/pin.png';
 
@@ -42,14 +43,14 @@ export default class MapContainer extends React.Component {
         if (!this.state.isLoading) {
             return (
                 <View style={styles.container}>
-                    <Text>Loading...</Text>
+                    <Spinner color='green' />
                 </View>
             );
         }
         else {
             let location = this.state.location;
             return (
-                <View style={styles.mapContainer}>
+                <View style={styles.container}>
                     <MapView
                         style={styles.map}
                         region={{
@@ -64,7 +65,6 @@ export default class MapContainer extends React.Component {
                             <MapView.Polyline coordinates={this.state.coords} strokeWidth={2} strokeColor="red" />
                         }
                     </MapView>
-                    <Text>{`${location.latitude},${location.longitude}`}</Text>
                 </View>
             );
         }
@@ -77,11 +77,6 @@ const styles = StyleSheet.create({
         backgroundColor: '#fff',
         alignItems: 'center',
         justifyContent: 'center',
-    },
-    mapContainer: {
-        flex: 1,                            // Take up the whole screen
-        justifyContent: 'flex-end',         // Arrange button at the bottom
-        alignItems: 'center',               // Center button horizontally
     },
     map: {
         ...StyleSheet.absoluteFillObject,
