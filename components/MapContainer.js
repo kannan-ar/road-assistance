@@ -1,10 +1,9 @@
 import React from 'react';
 import { View, StyleSheet, Dimensions, Image } from "react-native";
-import { MapView, Location, Permissions, Font } from "expo";
-import { Spinner, Container, Header, Title, Button, Icon, Content, Left, Body, Right } from "native-base";
-import { getDirections } from '../services/DirectionService';
-import { getPlaces } from '../services/PlaceService';
+import { MapView, Location, Font } from "expo";
+import { Spinner, Container, Header, Button, Icon, Content, Left } from "native-base";
 
+import { getLocationAsync } from '../services/MapService';
 import pinImg from '../assets/pin.png';
 
 const { width, height } = Dimensions.get("window");
@@ -20,36 +19,12 @@ export default class MapContainer extends React.Component {
     };
 
     componentWillMount() {
-        Location.setApiKey('AIzaSyC8KCgLAceI_r1dV39kg8GxUSlupwQkp48');
-        this.loadFonts();
-        this.getLocationAsync();
+       // Location.setApiKey('AIzaSyC8KCgLAceI_r1dV39kg8GxUSlupwQkp48');
+       getLocationAsync(1000, 'restaurant', this.locStore.bind(this));
     }
 
-    loadFonts = async () => {
-        await Font.loadAsync({
-            Roboto: require("native-base/Fonts/Roboto.ttf"),
-            Roboto_medium: require("native-base/Fonts/Roboto_medium.ttf")
-        });
-    }
-
-    getLocationAsync = async () => {
-        let { status } = await Permissions.askAsync(Permissions.LOCATION);
-        if (status === 'granted') {
-            let location = await Location.watchPositionAsync({ enableHighAccuracy: true, distanceInterval: 10 }, (loc) => {
-                let { latitude, longitude } = loc.coords;
-                getPlaces(latitude, longitude, 2000, 'resturant').then((data) => {
-                    console.log(JSON.stringify(data));
-                });
-                this.setState({ isLoading: true, location: { latitude, longitude } });
-            });
-        }
-    };
-
-    onClick = async () => {
-        let latLng = `${this.state.location.latitude},${this.state.location.longitude}`;
-        let coords = await getDirections(latLng, "Infopark, Kakkanad");
-        this.setState({ coords: coords });
-        //Alert.alert(JSON.stringify(msg));
+    locStore(latitude, longitude) {
+        this.setState({ isLoading: true, location: { latitude, longitude } });
     }
 
     render() {
@@ -83,14 +58,10 @@ export default class MapContainer extends React.Component {
                                 <MapView.Marker coordinate={{ ...location }} title="You are here">
                                     <Image source={pinImg} />
                                 </MapView.Marker>
-                                {!!this.state.coords &&
-                                    <MapView.Polyline coordinates={this.state.coords} strokeWidth={2} strokeColor="red" />
-                                }
                             </MapView>
                         </View>
                     </Content>
                 </Container>
-
             );
         }
     }
