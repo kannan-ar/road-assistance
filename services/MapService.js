@@ -1,6 +1,6 @@
 import { Location, Permissions } from "expo";
 
-import { getPlaces } from './PlaceService';
+import { getPlaces, formatPlaces } from './PlaceService';
 
 export const getLocationAsync = async (locStore) => {
     let { status } = await Permissions.askAsync(Permissions.LOCATION);
@@ -12,8 +12,7 @@ export const getLocationAsync = async (locStore) => {
     }
 };
 
-export const drawPlaces = (distance, keyword) => {
-    getPlaces(latitude, longitude, distance, keyword).then((data) => {
-        console.log(JSON.stringify(data));
-    });
+export const getMarkerPlaces = async (latitude, longitude, distance, keyword) => {
+    //formatPlaces(await getPlaces(latitude, longitude, distance, keyword));
+    return [{coord: {latitude: 10.0058822, longitude: 76.3066627}}];
 }

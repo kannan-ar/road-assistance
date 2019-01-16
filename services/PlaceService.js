@@ -31,5 +31,5 @@ export const getPlaces = async (latitude, longitude, radius, query) => {
 }
 
 export const formatPlaces = (json) => {
-
+    console.log(json);
 }
