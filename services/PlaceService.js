@@ -31,5 +31,5 @@ export const getPlaces = async (latitude, longitude, radius, query) => {
 }
 
 export const formatPlaces = (json) => {
-    console.log(json);
+    return json.results.map((item) => { return { coord: { latitude: item.geometry.location.lat, longitude: item.geometry.location.lng }, name: item.name, opening_hours: item.opening_hours, rating: item.rating } });
 }

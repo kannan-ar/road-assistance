@@ -27,7 +27,6 @@ export default class MapContainer extends React.Component {
 
     locStore(latitude, longitude) {
         this.setState({ isLoading: true, location: { latitude, longitude } });
-
         if (this.state.place_type !== '') {
             this.LoadPlaces(latitude, longitude, this.state.place_type);
         }
@@ -44,7 +43,9 @@ export default class MapContainer extends React.Component {
                 title: "Pick a service"
             },
             buttonIndex => {
-                this.setState({ place_type: getPlaceType(buttonIndex) });
+                let placeType = getPlaceType(buttonIndex);
+                this.setState({ place_type: placeType });
+                this.LoadPlaces(this.state.location.latitude, this.state.location.longitude, placeType);
             }
         )
     }

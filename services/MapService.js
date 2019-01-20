@@ -13,6 +13,5 @@ export const getLocationAsync = async (locStore) => {
 };
 
 export const getMarkerPlaces = async (latitude, longitude, distance, keyword) => {
-    //formatPlaces(await getPlaces(latitude, longitude, distance, keyword));
-    return [{coord: {latitude: 10.0058822, longitude: 76.3066627}}];
+    return formatPlaces(await getPlaces(latitude, longitude, distance, keyword));
 }
