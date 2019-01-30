@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, Dimensions, Image, Text } from "react-native";
+import { View, StyleSheet, Dimensions, Image, Text, Animated, Button, Easing } from "react-native";
 import { MapView } from "expo";
 import { Spinner, ActionSheet, Root } from "native-base";
 
@@ -11,7 +11,7 @@ const { width, height } = Dimensions.get("window");
 const ASPECT_RATIO = width / height;
 const LATITUDE_DELTA = 0.0122;
 const LONGITUDE_DELTA = LATITUDE_DELTA * ASPECT_RATIO;
-const DISTANCE = 1000;
+const DISTANCE = 500;
 
 export default class MapContainer extends React.Component {
     state = {
@@ -22,18 +22,49 @@ export default class MapContainer extends React.Component {
     };
 
     componentDidMount() {
-        getLocationAsync(this.locStore.bind(this));
+        getLocationAsync(this.onLocationChange.bind(this));
     }
 
-    locStore(latitude, longitude) {
+    componentWillMount() {
+        this.animation = new Animated.Value(0);
+    }
+
+    onLocationChange(latitude, longitude) {
         this.setState({ isLoading: true, location: { latitude, longitude } });
+
         if (this.state.place_type !== '') {
             this.LoadPlaces(latitude, longitude, this.state.place_type);
         }
+        
+        this.animateMarker();
     }
 
     LoadPlaces(latitude, longitude, place) {
         getMarkerPlaces(latitude, longitude, DISTANCE, place).then((data) => this.setState({ places: data }));
+    }
+
+    getMarkerStyle() {
+        const scaleStyle = {
+            transform: [
+                {
+                    scale: this.animation.interpolate({
+                        inputRange: [0, 1, 2],
+                        outputRange: [1, 2.5, 1],
+                        extrapolate: "clamp"
+                    })
+                }
+            ]
+        };
+
+        const opacityStyle = {
+            opacity: this.animation.interpolate({
+                inputRange: [0, 1, 2],
+                outputRange: [0.35, 1, 0.35],
+                extrapolate: "clamp",
+            }),
+        };
+
+        return { scaleStyle, opacityStyle };
     }
 
     onMapPress() {
@@ -50,31 +81,49 @@ export default class MapContainer extends React.Component {
         )
     }
 
+    animateMarker() {
+        Animated.timing(this.animation, {
+            toValue: 3,
+            duration: 1500,
+            easing: Easing.linear
+        }).start(() => {
+            this.animation.setValue(0);
+        });
+    }
+
     render() {
         if (!this.state.isLoading) {
             return (
-                <View style={styles.map}>
+                <View style={styles.container}>
                     <Spinner color='green' />
                 </View>
             );
         }
         else {
             let location = this.state.location;
+            let { scaleStyle, opacityStyle } = this.getMarkerStyle();
             return (
                 <Root>
                     <View style={{ width, height }}>
                         <MapView onPress={this.onMapPress.bind(this)}
-                            style={styles.map}
+                            style={styles.container}
                             region={{
                                 ...location,
                                 latitudeDelta: LATITUDE_DELTA,
                                 longitudeDelta: LONGITUDE_DELTA
                             }}>
-                            <MapView.Marker coordinate={{ ...location }} title="You are here">
-                                <Image source={pinImg} />
+                            <MapView.Marker style={styles.marker} coordinate={{ ...location }} title="You are here">
+                                <Animated.View style={[styles.markerWrap, opacityStyle]}>
+                                    <Animated.View style={[styles.ring, scaleStyle]} />
+                                    <View style={styles.pointer} />
+                                </Animated.View>
                             </MapView.Marker>
                             {!!this.state.places && this.state.places
-                                .map((item, index) => (<MapView.Marker key={index} coordinate={item.coord} />))}
+                                .map((item, index) => (<MapView.Marker key={index} coordinate={item.coord}>
+                                    <View>
+                                        <Text style={styles.text}>{item.rating}</Text>
+                                    </View>
+                                </MapView.Marker>))}
                         </MapView>
                     </View>
                 </Root>
@@ -84,7 +133,36 @@ export default class MapContainer extends React.Component {
 }
 
 const styles = StyleSheet.create({
-    map: {
-        ...StyleSheet.absoluteFillObject
+    container: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center'
+    },
+    text: {
+        color: '#550bbc',
+        fontWeight: 'bold'
+    },
+    markerWrap: {
+        alignItems: "center",
+        justifyContent: "center"
+    },
+    marker: {
+        width: 32,
+        height: 32
+    },
+    pointer: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+        backgroundColor: "rgba(130,4,150, 0.9)",
+    },
+    ring: {
+        width: 24,
+        height: 24,
+        borderRadius: 12,
+        backgroundColor: "rgba(130,4,150, 0.3)",
+        position: "absolute",
+        borderWidth: 1,
+        borderColor: "rgba(130,4,150, 0.5)"
     }
 });

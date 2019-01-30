@@ -2,12 +2,12 @@ import { Location, Permissions } from "expo";
 
 import { getPlaces, formatPlaces } from './PlaceService';
 
-export const getLocationAsync = async (locStore) => {
+export const getLocationAsync = async (onLocationChange) => {
     let { status } = await Permissions.askAsync(Permissions.LOCATION);
     if (status === 'granted') {
         let location = await Location.watchPositionAsync({ enableHighAccuracy: true, distanceInterval: 10 }, (loc) => {
             let { latitude, longitude } = loc.coords;
-            locStore(latitude, longitude);
+            onLocationChange(latitude, longitude);
         });
     }
 };
