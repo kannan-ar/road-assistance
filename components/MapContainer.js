@@ -35,7 +35,7 @@ export default class MapContainer extends React.Component {
         if (this.state.place_type !== '') {
             this.LoadPlaces(latitude, longitude, this.state.place_type);
         }
-        
+
         this.animateMarker();
     }
 
@@ -74,9 +74,11 @@ export default class MapContainer extends React.Component {
                 title: "Pick a service"
             },
             buttonIndex => {
-                let placeType = getPlaceType(buttonIndex);
-                this.setState({ place_type: placeType });
-                this.LoadPlaces(this.state.location.latitude, this.state.location.longitude, placeType);
+                if (buttonIndex !== undefined) {
+                    let placeType = getPlaceType(buttonIndex);
+                    this.setState({ place_type: placeType });
+                    this.LoadPlaces(this.state.location.latitude, this.state.location.longitude, placeType);
+                }
             }
         )
     }
@@ -112,7 +114,7 @@ export default class MapContainer extends React.Component {
                                 latitudeDelta: LATITUDE_DELTA,
                                 longitudeDelta: LONGITUDE_DELTA
                             }}>
-                            <MapView.Marker style={styles.marker} coordinate={{ ...location }} title="You are here">
+                            <MapView.Marker coordinate={{ ...location }} title="You are here">
                                 <Animated.View style={[styles.markerWrap, opacityStyle]}>
                                     <Animated.View style={[styles.ring, scaleStyle]} />
                                     <View style={styles.pointer} />
@@ -146,20 +148,17 @@ const styles = StyleSheet.create({
         alignItems: "center",
         justifyContent: "center"
     },
-    marker: {
-        width: 32,
-        height: 32
-    },
     pointer: {
-        width: 8,
-        height: 8,
+        width: 6,
+        height: 6,
         borderRadius: 4,
         backgroundColor: "rgba(130,4,150, 0.9)",
+        margin: 14
     },
     ring: {
-        width: 24,
-        height: 24,
-        borderRadius: 12,
+        width: 14,
+        height: 14,
+        borderRadius: 8,
         backgroundColor: "rgba(130,4,150, 0.3)",
         position: "absolute",
         borderWidth: 1,
