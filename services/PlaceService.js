@@ -1,3 +1,5 @@
+import {GOOGLE_API_KEY} from '../Environment';
+
 const Places = [
     { type: "hospital", name: "Hospital" },
     { type: "doctor", name: "Doctor" },
@@ -25,11 +27,12 @@ export const getPlaceType = (index) => {
 }
 
 export const getPlaces = async (latitude, longitude, radius, query) => {
-    let response = await fetch(`https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${latitude},${longitude}&radius=${radius}&type=${query}&key=AIzaSyC8KCgLAceI_r1dV39kg8GxUSlupwQkp48`);
+    let response = await fetch(`https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${latitude},${longitude}&radius=${radius}&type=${query}&key=${GOOGLE_API_KEY}`);
     let json = await response.json();
     return json;
 }
 
 export const formatPlaces = (json) => {
+    console.log(json);
     return json.results.map((item) => { return { coord: { latitude: item.geometry.location.lat, longitude: item.geometry.location.lng }, name: item.name, opening_hours: item.opening_hours, rating: item.rating } });
 }

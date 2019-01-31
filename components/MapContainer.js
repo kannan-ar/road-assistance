@@ -5,13 +5,14 @@ import { Spinner, ActionSheet, Root } from "native-base";
 
 import { getLocationAsync, getMarkerPlaces } from '../services/MapService';
 import { getPlaceTypes, getPlaceType } from '../services/PlaceService';
-import pinImg from '../assets/pin.png';
 
 const { width, height } = Dimensions.get("window");
 const ASPECT_RATIO = width / height;
 const LATITUDE_DELTA = 0.0122;
 const LONGITUDE_DELTA = LATITUDE_DELTA * ASPECT_RATIO;
 const DISTANCE = 500;
+const CARD_HEIGHT = height / 4;
+const CARD_WIDTH = CARD_HEIGHT - 50;
 
 export default class MapContainer extends React.Component {
     state = {
@@ -23,6 +24,7 @@ export default class MapContainer extends React.Component {
 
     componentDidMount() {
         getLocationAsync(this.onLocationChange.bind(this));
+        //console.log(Config.GOOGLE_API_KEY);
     }
 
     componentWillMount() {
@@ -122,11 +124,21 @@ export default class MapContainer extends React.Component {
                             </MapView.Marker>
                             {!!this.state.places && this.state.places
                                 .map((item, index) => (<MapView.Marker key={index} coordinate={item.coord}>
-                                    <View>
-                                        <Text style={styles.text}>{item.rating}</Text>
-                                    </View>
+                                    <Animated.View style={[styles.placeWrap]}>
+                                        <View style={styles.placePointer} />
+                                    </Animated.View>
                                 </MapView.Marker>))}
                         </MapView>
+                        <Animated.ScrollView horizontal scrollEventThrottle={1} showsHorizontalScrollIndicator={false} snapToInterval={CARD_WIDTH} 
+                            style={styles.scrollView} contentContainerStyle={styles.endPadding}>
+                            {!!this.state.places && this.state.places.map((item, index) => (
+                                <View style={styles.card} key={index}>
+                                    <View style={styles.textContent}>
+                                        <Text numberOfLines={1} style={styles.cardtitle}>test</Text>
+                                    </View>
+                                </View>
+                            ))}
+                        </Animated.ScrollView>
                     </View>
                 </Root>
             );
@@ -140,11 +152,20 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center'
     },
-    text: {
-        color: '#550bbc',
-        fontWeight: 'bold'
-    },
     markerWrap: {
+        alignItems: "center",
+        justifyContent: "center"
+    },
+    ring: {
+        width: 14,
+        height: 14,
+        borderRadius: 8,
+        backgroundColor: "rgba(130,4,150, 0.3)",
+        position: "absolute",
+        borderWidth: 1,
+        borderColor: "rgba(130,4,150, 0.5)"
+    },
+    placeWrap: {
         alignItems: "center",
         justifyContent: "center"
     },
@@ -155,13 +176,61 @@ const styles = StyleSheet.create({
         backgroundColor: "rgba(130,4,150, 0.9)",
         margin: 14
     },
-    ring: {
+    placeRing: {
+        width: 10,
+        height: 10,
+        borderRadius: 6,
+        position: "absolute",
+        borderWidth: 1,
+        borderColor: "#606493"
+    },
+    placePointer: {
         width: 14,
         height: 14,
         borderRadius: 8,
-        backgroundColor: "rgba(130,4,150, 0.3)",
-        position: "absolute",
-        borderWidth: 1,
-        borderColor: "rgba(130,4,150, 0.5)"
+        backgroundColor: "#f4bcbc",
+        borderColor: "#9cb3d1",
+        borderWidth: 1
+    },
+    scrollView: {
+      position: "absolute",
+      bottom: 30,
+      left: 0,
+      right: 0,
+      paddingVertical: 10,
+    },
+    endPadding: {
+      paddingRight: width - CARD_WIDTH,
+    },
+    card: {
+      padding: 10,
+      elevation: 2,
+      backgroundColor: "#FFF",
+      marginHorizontal: 10,
+      shadowColor: "#000",
+      shadowRadius: 5,
+      shadowOpacity: 0.3,
+      shadowOffset: { x: 2, y: -2 },
+      height: CARD_HEIGHT,
+      width: CARD_WIDTH,
+      overflow: "hidden",
+    },
+    cardImage: {
+      flex: 3,
+      width: "100%",
+      height: "100%",
+      alignSelf: "center",
+    },
+    textContent: {
+      flex: 1,
+    },
+    cardtitle: {
+      fontSize: 12,
+      marginTop: 5,
+      fontWeight: "bold",
+    },
+    cardDescription: {
+      fontSize: 12,
+      color: "#444",
     }
 });
