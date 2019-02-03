@@ -5,6 +5,7 @@ import { Spinner, ActionSheet, Root } from "native-base";
 
 import { getLocationAsync, getMarkerPlaces } from '../services/MapService';
 import { getPlaceTypes, getPlaceType } from '../services/PlaceService';
+import { getImageLink } from '../services/ImageService';
 
 const { width, height } = Dimensions.get("window");
 const ASPECT_RATIO = width / height;
@@ -24,11 +25,12 @@ export default class MapContainer extends React.Component {
 
     componentDidMount() {
         getLocationAsync(this.onLocationChange.bind(this));
-        //console.log(Config.GOOGLE_API_KEY);
+        this.animateRegion();
     }
 
     componentWillMount() {
         this.animation = new Animated.Value(0);
+        this.placeAnimation = new Animated.Value(0);
     }
 
     onLocationChange(latitude, longitude) {
@@ -43,6 +45,37 @@ export default class MapContainer extends React.Component {
 
     LoadPlaces(latitude, longitude, place) {
         getMarkerPlaces(latitude, longitude, DISTANCE, place).then((data) => this.setState({ places: data }));
+    }
+
+    getInterpolation(index) {
+        const inputRange = [
+            (index - 1) * CARD_WIDTH,
+            index * CARD_WIDTH,
+            ((index + 1) * CARD_WIDTH),
+        ];
+        const scale = this.placeAnimation.interpolate({
+            inputRange,
+            outputRange: [1, 2.5, 1],
+            extrapolate: "clamp",
+        });
+        const opacity = this.placeAnimation.interpolate({
+            inputRange,
+            outputRange: [0.35, 1, 0.35],
+            extrapolate: "clamp",
+        });
+
+        const scaleStyle = {
+            transform: [
+                {
+                    scale: scale,
+                },
+            ],
+        };
+        const opacityStyle = {
+            opacity: opacity,
+        };
+
+        return { scaleStyle, opacityStyle };
     }
 
     getMarkerStyle() {
@@ -85,6 +118,35 @@ export default class MapContainer extends React.Component {
         )
     }
 
+    animateRegion() {
+        this.placeAnimation.addListener(({ value }) => {
+            let index = Math.floor(value / CARD_WIDTH + 0.3);
+            if (index >= this.state.places.length) {
+                index = this.state.places.length - 1;
+            }
+            if (index <= 0) {
+                index = 0;
+            }
+
+            clearTimeout(this.regionTimeout);
+            this.regionTimeout = setTimeout(() => {
+                if (this.index !== index) {
+                    this.index = index;
+                    let coord = this.state.places[index].coord;
+                    this.map.animateToRegion(
+                        {
+                            latitude: coord.latitude,
+                            longitude: coord.longitude,
+                            latitudeDelta: LATITUDE_DELTA,
+                            longitudeDelta: LONGITUDE_DELTA,
+                        },
+                        350
+                    );
+                }
+            }, 10);
+        });
+    }
+
     animateMarker() {
         Animated.timing(this.animation, {
             toValue: 3,
@@ -93,6 +155,60 @@ export default class MapContainer extends React.Component {
         }).start(() => {
             this.animation.setValue(0);
         });
+    }
+
+    renderPlaces() {
+        if (this.state.places.length == 0) {
+            return null;
+        }
+        /*
+        this.state.places.map((item, index) => {
+            console.log(item.name);
+            console.log(interpolations[index].scaleStyle);
+        });
+*/
+        return this.state.places.map((item, index) => {
+            let interpolation = this.getInterpolation(index);
+            return (<MapView.Marker key={index} coordinate={item.coord}>
+                <Animated.View style={[styles.placeWrap, interpolation.opacityStyle]}>
+                    <Animated.View style={[styles.placeRing, interpolation.scaleStyle]} />
+                    <View style={styles.placePointer} />
+                </Animated.View>
+            </MapView.Marker>)
+        }
+        )
+    }
+
+    renderPlaceCarousel() {
+        if (this.state.places.length == 0) {
+            return null;
+        }
+
+        return (
+            <Animated.ScrollView horizontal scrollEventThrottle={1} showsHorizontalScrollIndicator={false} snapToInterval={CARD_WIDTH}
+                style={styles.scrollView} contentContainerStyle={styles.endPadding} onScroll={Animated.event(
+                    [
+                        {
+                            nativeEvent: {
+                                contentOffset: {
+                                    x: this.placeAnimation,
+                                },
+                            },
+                        },
+                    ],
+                    { useNativeDriver: true }
+                )}>
+                {!!this.state.places && this.state.places.map((item, index) => (
+                    <View style={styles.card} key={index}>
+                        {item.photo_reference != '' ?
+                            <Image source={{ uri: getImageLink(CARD_WIDTH.toFixed(0), item.photo_reference) }} style={styles.cardImage} resizeMode="cover" /> : null
+                        }
+                        <View style={styles.textContent}>
+                            <Text numberOfLines={1} style={styles.cardtitle}>{item.name} {item.rating == null ? null : (item.rating)}</Text>
+                        </View>
+                    </View>
+                ))}
+            </Animated.ScrollView>)
     }
 
     render() {
@@ -109,7 +225,7 @@ export default class MapContainer extends React.Component {
             return (
                 <Root>
                     <View style={{ width, height }}>
-                        <MapView onPress={this.onMapPress.bind(this)}
+                        <MapView ref={map => this.map = map} onPress={this.onMapPress.bind(this)}
                             style={styles.container}
                             region={{
                                 ...location,
@@ -122,23 +238,9 @@ export default class MapContainer extends React.Component {
                                     <View style={styles.pointer} />
                                 </Animated.View>
                             </MapView.Marker>
-                            {!!this.state.places && this.state.places
-                                .map((item, index) => (<MapView.Marker key={index} coordinate={item.coord}>
-                                    <Animated.View style={[styles.placeWrap]}>
-                                        <View style={styles.placePointer} />
-                                    </Animated.View>
-                                </MapView.Marker>))}
+                            {this.renderPlaces()}
                         </MapView>
-                        <Animated.ScrollView horizontal scrollEventThrottle={1} showsHorizontalScrollIndicator={false} snapToInterval={CARD_WIDTH} 
-                            style={styles.scrollView} contentContainerStyle={styles.endPadding}>
-                            {!!this.state.places && this.state.places.map((item, index) => (
-                                <View style={styles.card} key={index}>
-                                    <View style={styles.textContent}>
-                                        <Text numberOfLines={1} style={styles.cardtitle}>test</Text>
-                                    </View>
-                                </View>
-                            ))}
-                        </Animated.ScrollView>
+                        {this.renderPlaceCarousel()}
                     </View>
                 </Root>
             );
@@ -165,10 +267,6 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: "rgba(130,4,150, 0.5)"
     },
-    placeWrap: {
-        alignItems: "center",
-        justifyContent: "center"
-    },
     pointer: {
         width: 6,
         height: 6,
@@ -176,61 +274,67 @@ const styles = StyleSheet.create({
         backgroundColor: "rgba(130,4,150, 0.9)",
         margin: 14
     },
-    placeRing: {
-        width: 10,
-        height: 10,
-        borderRadius: 6,
-        position: "absolute",
-        borderWidth: 1,
-        borderColor: "#606493"
+    placeWrap: {
+        alignItems: "center",
+        justifyContent: "center"
     },
-    placePointer: {
+    placeRing: {
         width: 14,
         height: 14,
         borderRadius: 8,
-        backgroundColor: "#f4bcbc",
-        borderColor: "#9cb3d1",
-        borderWidth: 1
+        backgroundColor: "#72a0ea",
+        position: "absolute",
+        borderWidth: 1,
+        borderColor: "#568ce2"
+    },
+    placePointer: {
+        width: 6,
+        height: 6,
+        borderRadius: 4,
+        backgroundColor: "#3674d8",
+        margin: 14
     },
     scrollView: {
-      position: "absolute",
-      bottom: 30,
-      left: 0,
-      right: 0,
-      paddingVertical: 10,
+        position: "absolute",
+        bottom: 30,
+        left: 0,
+        right: 0,
+        paddingVertical: 10,
     },
     endPadding: {
-      paddingRight: width - CARD_WIDTH,
+        paddingRight: width - CARD_WIDTH,
     },
     card: {
-      padding: 10,
-      elevation: 2,
-      backgroundColor: "#FFF",
-      marginHorizontal: 10,
-      shadowColor: "#000",
-      shadowRadius: 5,
-      shadowOpacity: 0.3,
-      shadowOffset: { x: 2, y: -2 },
-      height: CARD_HEIGHT,
-      width: CARD_WIDTH,
-      overflow: "hidden",
+        padding: 10,
+        elevation: 2,
+        backgroundColor: "#FFF",
+        marginHorizontal: 10,
+        shadowColor: "#000",
+        shadowRadius: 5,
+        shadowOpacity: 0.3,
+        shadowOffset: { x: 2, y: -2 },
+        height: CARD_HEIGHT,
+        width: CARD_WIDTH,
+        overflow: "hidden",
     },
     cardImage: {
-      flex: 3,
-      width: "100%",
-      height: "100%",
-      alignSelf: "center",
+        flex: 3,
+        width: "100%",
+        height: "100%",
+        alignSelf: "center",
     },
     textContent: {
-      flex: 1,
+        flex: 1,
+        flexDirection: 'row'
     },
     cardtitle: {
-      fontSize: 12,
-      marginTop: 5,
-      fontWeight: "bold",
+        flex: 1,
+        flexWrap: 'wrap',
+        fontSize: 11,
+        marginTop: 5,
     },
     cardDescription: {
-      fontSize: 12,
-      color: "#444",
+        fontSize: 12,
+        color: "#444",
     }
 });

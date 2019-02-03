@@ -1,4 +1,4 @@
-import {GOOGLE_API_KEY} from '../Environment';
+import { GOOGLE_API_KEY } from '../Environment';
 
 const Places = [
     { type: "hospital", name: "Hospital" },
@@ -33,6 +33,11 @@ export const getPlaces = async (latitude, longitude, radius, query) => {
 }
 
 export const formatPlaces = (json) => {
-    console.log(json);
-    return json.results.map((item) => { return { coord: { latitude: item.geometry.location.lat, longitude: item.geometry.location.lng }, name: item.name, opening_hours: item.opening_hours, rating: item.rating } });
+    return json.results.map((item) => {
+        return {
+            coord: { latitude: item.geometry.location.lat, longitude: item.geometry.location.lng }, name: item.name,
+            opening_hours: item.opening_hours, rating: item.rating, photo_reference: Array.isArray(item.photos) && item.photos.length >= 0 ? 
+            item.photos[0].photo_reference : ""
+        }
+    });
 }

@@ -5,7 +5,7 @@ import { getPlaces, formatPlaces } from './PlaceService';
 export const getLocationAsync = async (onLocationChange) => {
     let { status } = await Permissions.askAsync(Permissions.LOCATION);
     if (status === 'granted') {
-        let location = await Location.watchPositionAsync({ enableHighAccuracy: true, distanceInterval: 10 }, (loc) => {
+        let location = await Location.watchPositionAsync({ enableHighAccuracy: true, distanceInterval: 100 }, (loc) => {
             let { latitude, longitude } = loc.coords;
             onLocationChange(latitude, longitude);
         });
